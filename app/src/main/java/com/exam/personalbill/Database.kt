@@ -37,6 +37,15 @@ class Database(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,null,
         return db.insert(TABLE_USERS, null, values)
     }
 
+    fun getUser(username: String, password: String): Boolean {
+        val db = this.readableDatabase
+        val query = "SELECT * FROM $TABLE_USERS WHERE $COLUMN_USERNAME = ? AND $COLUMN_PASSWORD = ?"
+        val cursor = db.rawQuery(query, arrayOf(username, password))
+        val count = cursor.count
+        cursor.close()
+        return count > 0
+    }
+
     fun checkUser(username: String, password: String): Boolean {
         val db = this.readableDatabase
         val cursor: Cursor = db.rawQuery(

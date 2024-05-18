@@ -1,10 +1,11 @@
-package com.exam.personalbill
+package com.exam.personalbill.activity
 
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.content.Intent
+import com.exam.personalbill.R
 
 class SplashActivity : AppCompatActivity() {
     private val splash_time: Long = 2000
