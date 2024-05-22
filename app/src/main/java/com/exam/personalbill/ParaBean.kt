@@ -58,3 +58,6 @@ data class ParaBean(
         classification = newclassification
     }
 }
+
+data class Deposit(val id: Int, val category: String, val amount: Double)
+
