@@ -7,38 +7,42 @@ import android.database.sqlite.SQLiteOpenHelper
 import android.content.ContentValues
 import android.database.Cursor
 
-class Database(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,null,DATABASE_VERSION) {
-//    companion object{
-//        private const val DATABASE_VERSION = 1
-//        private const val DATABASE_NAME = "PersonalBill.db"
-//        private const val TABLE_USERS = "Users"
-//        private const val COLUMN_ID = "id"
-//        private const val COLUMN_USERNAME = "username"
-//        private const val COLUMN_PASSWORD = "password"
-//    }
+class Database(context: Context) :
+    SQLiteOpenHelper(context, DATABASE_NAME, null, DATABASE_VERSION) {
     companion object {
         private const val DATABASE_NAME = "PersonalBill.db"     //declare database name
         private const val DATABASE_VERSION = 1
 
-        private const val USER_TABLE_NAME = "Users"
+        private const val USER_TABLE_NAME = "Users"             //declare USER_TABLE Para
         private const val USER_COLUMN_ID = "id"
         private const val USER_COLUMN_USERNAME = "username"
         private const val USER_COLUMN_PASSWORD = "password"
 
-        const val TABLE_NAME = "deposits"
-        const val COLUMN_ID = "id"
-        const val COLUMN_CATEGORY = "category"
-        const val COLUMN_AMOUNT = "amount"
+        private const val ACCOUNT_TABLE_NAME = "deposits"       //declare ACCOUNT_TABLE Para
+        private const val ACCOUNT_COLUMN_ID = "id"
+        private const val ACCOUNT_COLUMN_CATEGORY = "category"
+        private const val ACCOUNT_COLUMN_AMOUNT = "amount"
+        private const val ACCOUNT_COLUMN_TIMESTAMP = "timestamp"
     }
-    override fun onCreate(db: SQLiteDatabase) {
-        val createUsersTable = ("CREATE TABLE $USER_TABLE_NAME ("
+
+    override fun onCreate(db: SQLiteDatabase) {                             //override class SQLiteDatabase
+        val createUsersTable = ("CREATE TABLE $USER_TABLE_NAME ("           //create USER_TABLE
                 + "$USER_COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,"
                 + "$USER_COLUMN_USERNAME TEXT,"
                 + "$USER_COLUMN_PASSWORD TEXT)")
         db.execSQL(createUsersTable)
+
+        val createAccountTable = ("CREATE TABLE $ACCOUNT_TABLE_NAME("       //create ACCOUNT_TABLE
+                + "$ACCOUNT_COLUMN_ID INTEGER PRIMARY KEY AUTOINCREMENT,"
+                + "$ACCOUNT_COLUMN_CATEGORY TEXT,"
+                + "$ACCOUNT_COLUMN_AMOUNT REAL,"
+                + "$ACCOUNT_COLUMN_TIMESTAMP TEXT)")
+        db.execSQL(createAccountTable)
     }
+
     override fun onUpgrade(db: SQLiteDatabase, oldVersion: Int, newVersion: Int) {
         db.execSQL("DROP TABLE IF EXISTS $USER_TABLE_NAME")
+        db.execSQL("DROP TABLE IF EXISTS $ACCOUNT_TABLE_NAME")
         onCreate(db)
     }
 
@@ -53,7 +57,8 @@ class Database(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,null,
 
     fun getUser(username: String, password: String): Boolean {
         val db = this.readableDatabase
-        val query = "SELECT * FROM $USER_TABLE_NAME WHERE $USER_COLUMN_USERNAME = ? AND $USER_COLUMN_PASSWORD = ?"
+        val query =
+            "SELECT * FROM $USER_TABLE_NAME WHERE $USER_COLUMN_USERNAME = ? AND $USER_COLUMN_PASSWORD = ?"
         val cursor = db.rawQuery(query, arrayOf(username, password))
         val count = cursor.count
         cursor.close()
@@ -71,20 +76,41 @@ class Database(context: Context) : SQLiteOpenHelper(context, DATABASE_NAME,null,
         return exists
     }
 
+    fun addAccount(category: String,amount:Float,timestamp:Float): Long {
+        val db = this.writableDatabase
+        val values = ContentValues()
+        values.put(ACCOUNT_COLUMN_CATEGORY,category)
+        values.put(ACCOUNT_COLUMN_AMOUNT,amount)
+        values.put(ACCOUNT_COLUMN_TIMESTAMP,timestamp)
+
+        return db.insert(ACCOUNT_TABLE_NAME,null,values)
+    }
+
     @SuppressLint("Range")
     fun getAllDeposits(): List<Deposit> {
         val deposits = mutableListOf<Deposit>()
         val db = this.readableDatabase
-        val cursor = db.rawQuery("SELECT * FROM $TABLE_NAME", null)
+        val cursor = db.rawQuery(
+            "SELECT $ACCOUNT_COLUMN_CATEGORY, SUM($ACCOUNT_COLUMN_AMOUNT) as total_amount FROM $ACCOUNT_TABLE_NAME GROUP BY $ACCOUNT_COLUMN_CATEGORY",
+            null
+        )
         if (cursor.moveToFirst()) {
             do {
-                val id = cursor.getInt(cursor.getColumnIndex(COLUMN_ID))
-                val category = cursor.getString(cursor.getColumnIndex(COLUMN_CATEGORY))
-                val amount = cursor.getDouble(cursor.getColumnIndex(COLUMN_AMOUNT))
-                deposits.add(Deposit(id, category, amount))
+                val category = cursor.getString(cursor.getColumnIndexOrThrow(ACCOUNT_COLUMN_CATEGORY))
+                val totalAmount = cursor.getDouble(cursor.getColumnIndexOrThrow("total_amount"))
+                deposits.add(Deposit(0, category, totalAmount))
             } while (cursor.moveToNext())
         }
         cursor.close()
         return deposits
+    }
+
+    fun insertDeposit(category: String, amount: Double, timestamp: String) {
+        val db = this.writableDatabase
+        val contentValues = ContentValues()
+        contentValues.put(ACCOUNT_COLUMN_CATEGORY, category)
+        contentValues.put(ACCOUNT_COLUMN_AMOUNT, amount)
+        contentValues.put(ACCOUNT_COLUMN_TIMESTAMP, timestamp)
+        db.insert(ACCOUNT_TABLE_NAME, null, contentValues)
     }
 }
