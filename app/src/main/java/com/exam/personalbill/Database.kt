@@ -87,8 +87,8 @@ class Database(context: Context) :
     }
 
     @SuppressLint("Range")
-    fun getAllDeposits(): List<Deposit> {
-        val deposits = mutableListOf<Deposit>()
+    fun getAllDeposits(): List<DepositAll> {
+        val deposits = mutableListOf<DepositAll>()
         val db = this.readableDatabase
         val cursor = db.rawQuery(
             "SELECT $ACCOUNT_COLUMN_CATEGORY, SUM($ACCOUNT_COLUMN_AMOUNT) as total_amount FROM $ACCOUNT_TABLE_NAME GROUP BY $ACCOUNT_COLUMN_CATEGORY",
@@ -98,7 +98,25 @@ class Database(context: Context) :
             do {
                 val category = cursor.getString(cursor.getColumnIndexOrThrow(ACCOUNT_COLUMN_CATEGORY))
                 val totalAmount = cursor.getDouble(cursor.getColumnIndexOrThrow("total_amount"))
-                deposits.add(Deposit(0, category, totalAmount))
+                deposits.add(DepositAll(0, category, totalAmount))
+            } while (cursor.moveToNext())
+        }
+        cursor.close()
+        return deposits
+    }
+
+    fun getEveryDeposits():List<DepositEvery>{
+        val deposits = mutableListOf<DepositEvery>()
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("SELECT * FROM $ACCOUNT_TABLE_NAME", null)
+        if (cursor.moveToFirst()) {
+            do {
+                val id = cursor.getInt(cursor.getColumnIndexOrThrow(ACCOUNT_COLUMN_ID))
+                val category = cursor.getString(cursor.getColumnIndexOrThrow(ACCOUNT_COLUMN_CATEGORY))
+                val amount = cursor.getDouble(cursor.getColumnIndexOrThrow(ACCOUNT_COLUMN_AMOUNT))
+                val timestamp = cursor.getString(cursor.getColumnIndexOrThrow(
+                    ACCOUNT_COLUMN_TIMESTAMP))
+                deposits.add(DepositEvery(id, category, amount, timestamp))
             } while (cursor.moveToNext())
         }
         cursor.close()
@@ -112,5 +130,11 @@ class Database(context: Context) :
         contentValues.put(ACCOUNT_COLUMN_AMOUNT, amount)
         contentValues.put(ACCOUNT_COLUMN_TIMESTAMP, timestamp)
         db.insert(ACCOUNT_TABLE_NAME, null, contentValues)
+    }
+
+    fun deleteDeposit(id: Int) {
+        val db = this.writableDatabase
+        db.delete(ACCOUNT_TABLE_NAME, "$ACCOUNT_COLUMN_ID = ?", arrayOf(id.toString()))
+        db.close()
     }
 }
