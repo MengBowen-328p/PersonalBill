@@ -65,6 +65,21 @@ class Database(context: Context) :
         return count > 0
     }
 
+    fun isUserLoggedIn(): Boolean {
+        val db = this.readableDatabase
+        val cursor = db.rawQuery("SELECT * FROM $USER_TABLE_NAME", null)
+        val isLoggedIn = cursor.count > 0
+        cursor.close()
+        db.close()
+        return isLoggedIn
+    }
+
+    fun clearUserData() {
+        val db = this.writableDatabase
+        db.delete(USER_TABLE_NAME, null, null)
+        db.close()
+    }
+
     fun checkUser(username: String, password: String): Boolean {
         val db = this.readableDatabase
         val cursor: Cursor = db.rawQuery(
@@ -76,14 +91,14 @@ class Database(context: Context) :
         return exists
     }
 
-    fun addAccount(category: String,amount:Float,timestamp:Float): Long {
+    fun addAccount(category: String, amount: Float, timestamp: Float): Long {
         val db = this.writableDatabase
         val values = ContentValues()
-        values.put(ACCOUNT_COLUMN_CATEGORY,category)
-        values.put(ACCOUNT_COLUMN_AMOUNT,amount)
-        values.put(ACCOUNT_COLUMN_TIMESTAMP,timestamp)
+        values.put(ACCOUNT_COLUMN_CATEGORY, category)
+        values.put(ACCOUNT_COLUMN_AMOUNT, amount)
+        values.put(ACCOUNT_COLUMN_TIMESTAMP, timestamp)
 
-        return db.insert(ACCOUNT_TABLE_NAME,null,values)
+        return db.insert(ACCOUNT_TABLE_NAME, null, values)
     }
 
     @SuppressLint("Range")
@@ -96,7 +111,8 @@ class Database(context: Context) :
         )
         if (cursor.moveToFirst()) {
             do {
-                val category = cursor.getString(cursor.getColumnIndexOrThrow(ACCOUNT_COLUMN_CATEGORY))
+                val category =
+                    cursor.getString(cursor.getColumnIndexOrThrow(ACCOUNT_COLUMN_CATEGORY))
                 val totalAmount = cursor.getDouble(cursor.getColumnIndexOrThrow("total_amount"))
                 deposits.add(DepositAll(0, category, totalAmount))
             } while (cursor.moveToNext())
@@ -105,17 +121,21 @@ class Database(context: Context) :
         return deposits
     }
 
-    fun getEveryDeposits():List<DepositEvery>{
+    fun getEveryDeposits(): List<DepositEvery> {
         val deposits = mutableListOf<DepositEvery>()
         val db = this.readableDatabase
         val cursor = db.rawQuery("SELECT * FROM $ACCOUNT_TABLE_NAME", null)
         if (cursor.moveToFirst()) {
             do {
                 val id = cursor.getInt(cursor.getColumnIndexOrThrow(ACCOUNT_COLUMN_ID))
-                val category = cursor.getString(cursor.getColumnIndexOrThrow(ACCOUNT_COLUMN_CATEGORY))
+                val category =
+                    cursor.getString(cursor.getColumnIndexOrThrow(ACCOUNT_COLUMN_CATEGORY))
                 val amount = cursor.getDouble(cursor.getColumnIndexOrThrow(ACCOUNT_COLUMN_AMOUNT))
-                val timestamp = cursor.getString(cursor.getColumnIndexOrThrow(
-                    ACCOUNT_COLUMN_TIMESTAMP))
+                val timestamp = cursor.getString(
+                    cursor.getColumnIndexOrThrow(
+                        ACCOUNT_COLUMN_TIMESTAMP
+                    )
+                )
                 deposits.add(DepositEvery(id, category, amount, timestamp))
             } while (cursor.moveToNext())
         }
@@ -136,5 +156,29 @@ class Database(context: Context) :
         val db = this.writableDatabase
         db.delete(ACCOUNT_TABLE_NAME, "$ACCOUNT_COLUMN_ID = ?", arrayOf(id.toString()))
         db.close()
+    }
+
+    fun updateDeposit(id: Int, category: String, amount: Double) {
+        val db = this.writableDatabase
+        val values = ContentValues().apply {
+            put(ACCOUNT_COLUMN_CATEGORY, category)
+            put(ACCOUNT_COLUMN_AMOUNT, amount)
+        }
+        db.update(ACCOUNT_TABLE_NAME, values, "$ACCOUNT_COLUMN_ID = ?", arrayOf(id.toString()))
+        db.close()
+    }
+
+    fun getDepositById(id: Int): DepositEvery {
+        val db = this.readableDatabase
+        val cursor = db.query(ACCOUNT_TABLE_NAME, null, "$ACCOUNT_COLUMN_ID=?", arrayOf(id.toString()), null, null, null)
+        cursor?.moveToFirst()
+        val deposit = DepositEvery(
+            cursor!!.getInt(cursor.getColumnIndexOrThrow(ACCOUNT_COLUMN_ID)),
+            cursor.getString(cursor.getColumnIndexOrThrow(ACCOUNT_COLUMN_CATEGORY)),
+            cursor.getDouble(cursor.getColumnIndexOrThrow(ACCOUNT_COLUMN_AMOUNT)),
+            cursor.getString(cursor.getColumnIndexOrThrow(ACCOUNT_COLUMN_TIMESTAMP))
+        )
+        cursor.close()
+        return deposit
     }
 }

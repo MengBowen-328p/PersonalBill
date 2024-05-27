@@ -1,13 +1,9 @@
 package com.exam.personalbill
 
-data class ParaBean(
+data class User(
     private var userid: Int,
     private var username: String,
     private var password: String,
-    private var timestamp: String,
-    private var quantity: Float,
-    private var purpose: String,
-    private var classification: String,
 )
 
 data class DepositEvery(

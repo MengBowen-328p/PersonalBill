@@ -41,7 +41,7 @@ class Home : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         db = Database(requireContext())
-        val data = listOf("Accounting", "Auditing")
+        val data = listOf("记账", "账单")
         val imageIds = listOf(
             R.mipmap.mainicon,
             R.mipmap.mainicon
@@ -54,13 +54,13 @@ class Home : Fragment() {
             AdapterView.OnItemClickListener { parent, view, position, id ->
                 // 启动新的 Activity 并传递数据
                 val selecteditemtext = data[position]
-                if (selecteditemtext == "Accounting") {
+                if (selecteditemtext == "记账") {
                     // 跳转到第一个 Activity
                     val intent = Intent(activity, AccountingActivity::class.java)
                     intent.putExtra("ITEM_TEXT", selecteditemtext)
                     intent.putExtra("ITEM_IMAGE", imageIds[position])
                     startActivity(intent)
-                } else if (selecteditemtext == "Auditing") {
+                } else if (selecteditemtext == "账单") {
                     // 跳转到第二个 Activity
                     val intent = Intent(activity, AuditingActivity::class.java)
                     intent.putExtra("ITEM_TEXT", selecteditemtext)
